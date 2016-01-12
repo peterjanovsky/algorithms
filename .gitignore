@@ -30,3 +30,11 @@
 
 # Debug files
 *.dSYM/
+
+# Directories
+build/*
+lib/*
+bin/*
+
+# Miscellaneous
+*.swp
