@@ -3,6 +3,7 @@
 
 #include "insertion_sort.c"
 #include "merge_sort.c"
+#include "bubble_sort.c"
 
 #define SIZE_OF_SMALL_ARRAY   6
 #define SIZE_OF_LARGE_ARRAY   16
@@ -31,5 +32,17 @@ int main()
 
           printf("expected: %d actual: %d\n", sortedMerge[i], resultMerge[i]);
           assert( sortedMerge[i] == resultMerge[i] );
+     }
+
+     printf("bubble sort\n");
+
+     int sortedBubble[SIZE_OF_SMALL_ARRAY] = { 1, 2, 3, 4, 5, 6 };
+     int sortableBubble[SIZE_OF_SMALL_ARRAY] = { 2, 5, 4, 6, 3, 1 };
+
+     int *resultBubble = bubble_sort( sortableBubble, SIZE_OF_SMALL_ARRAY );
+     for ( int i=0; i < SIZE_OF_SMALL_ARRAY; i++ ) {
+
+          printf("expected: %d actual: %d\n", sortedBubble[i], resultBubble[i]);
+          assert( sortedBubble[i] == resultBubble[i] );
      }
 }
