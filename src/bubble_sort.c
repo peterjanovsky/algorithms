@@ -1,9 +1,20 @@
 #include <limits.h>
 
-/* 
- * @param sortable array to sort
- * @param size size of sortable array
- * @return the sorted array
+/*
+ * Function: bubble_sort
+ * ---------------------
+ * leverages two loops traversing in opposite directions, where the outer loop
+ * traverses from the beginning of the array to its end and the inner loop traverses
+ * from the end of the array to its beginning. smaller values bubble to the
+ * beginning of the array
+ *
+ * traversing towards the end of the array and the inner loop travering towards
+ * the beginning of the array.
+
+ * sortable: array to sort ( signed integers )
+ * size: size of sortable array
+ *
+ * returns: the sorted array
  */
 int *bubble_sort(int sortable[], int size)
 {
@@ -12,10 +23,10 @@ int *bubble_sort(int sortable[], int size)
 
           /* traverse array starting last position stepping backwards
            *
-           *  swap cursor value with  value at position proceeding cursor
-           *    if cursor value is less than proceeding value
+           *  swap cursor value with value at position proceeding cursor if
+           *  cursor value is less than proceeding value
            */
-          for ( int j=size-1; j > 0; j-- ) {
+          for ( int j=size-1; j > i; j-- ) {
 
                if ( sortable[j] < sortable[j - 1] ) {
 
