@@ -61,6 +61,8 @@ int heap_extract_max(heap *h)
  * violate the property for a running time of O(lg n)
  *
  * h: heap
+ * i: offset
+ * key: value to insert at offset
  *
  * returns: nothing
  */
@@ -87,6 +89,7 @@ void heap_increase_key(heap *h, int i, int key)
  * adds the key to the heap's underlying array with a running time of O(lg n)
  *
  * h: heap
+ * key: key to insert
  *
  * returns: nothing
  */

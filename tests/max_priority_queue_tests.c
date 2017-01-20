@@ -40,7 +40,7 @@ void test_heap_maximum()
 
 void test_heap_extract_max()
 {
-    int expected[SIZE_OF_ARRAY] = { 14, 10, 8, 7, 9, 3, 2, 4, 1 };
+    int expected[SIZE_OF_ARRAY] = { 14, 8, 10, 4, 7, 9, 3, 2, 1 };
     int arr[SIZE_OF_ARRAY] = { 4, 1, 3, 2, 16, 9, 10, 14, 8, 7 };
 
     heap h;
@@ -55,7 +55,6 @@ void test_heap_extract_max()
     int max = heap_extract_max(&h);
 
     printf("extract maximum heap value\n");
-
     printf("verify heap size was decremented by a single element\n");
     assert( h.size == h.length );
 
@@ -64,13 +63,12 @@ void test_heap_extract_max()
 
     for (int i=0; i < h.size; i++) {
         printf("offset: %d value: %d expected: %d\n", i, h.array[i], expected[i]);
-        //assert( h.array[i] == expected[i] );
+        assert( h.array[i] == expected[i] );
     }
 }
 
 void test_heap_increase_key()
 {
-    //int expected[SIZE_OF_ARRAY] = { 16, 14, 10, 8, 7, 9, 3, 2, 4, 1 };
     int expected[SIZE_OF_ARRAY] = { 16, 15, 10, 14, 7, 9, 3, 2, 8, 1 };
     int arr[SIZE_OF_ARRAY] = { 4, 1, 3, 2, 16, 9, 10, 14, 8, 7 };
 
@@ -90,7 +88,7 @@ void test_heap_increase_key()
 
     for (int i=0; i < h.size; i++) {
         printf("offset: %d value: %d expected: %d\n", i, h.array[i], expected[i]);
-        //assert( h.array[i] == expected[i] );
+        assert( h.array[i] == expected[i] );
     }
 }
 
