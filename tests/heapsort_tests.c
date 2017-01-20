@@ -166,6 +166,52 @@ void test_heap_sort()
     }
 }
 
+/* Expected array values and offsets
+ *
+ *          -----------------------------------------------------------------------
+ * value    |  14  |  32  |  23  |  50  |  53  |  41  |  87  |  64  |  90  |  54  |
+ *          -----------------------------------------------------------------------
+ * offset   |   0  |   1  |   2  |   3  |   4  |   5  |   6  |   7  |   8  |   9  |
+ *          -----------------------------------------------------------------------
+ */
+void test_min_heapify()
+{
+    int expected[10] = { 14, 32, 23, 50, 53, 41, 87, 64, 90, 54 };
+    int arr[10] = { 14, 32, 23, 90, 53, 41, 87, 64, 50, 54 };
+
+    heap h;
+    h.length = 9;
+    h.size = 10;
+    h.array = arr;
+
+    min_heapify(&h, 3);
+
+    printf("min-heap\n");
+    for (int i=0; i < h.size; i++) {
+        printf("offset: %d value: %d expected: %d\n", i, h.array[i], expected[i]);
+        assert( h.array[i] == expected[i] );
+    }
+}
+
+void test_build_min_heap()
+{
+    int expected[10] = { 14, 32, 23, 50, 53, 41, 87, 64, 90, 54 };
+    int arr[10] = { 64, 53, 87, 90, 54, 41, 23, 50, 32, 14 };
+
+    heap h;
+    h.length = 9;
+    h.size = 10;
+    h.array = arr;
+
+    build_min_heap(&h);
+
+    printf("build min-heap\n");
+    for (int i=0; i < h.size; i++) {
+        printf("offset: %d value: %d expected: %d\n", i, h.array[i], expected[i]);
+        assert( h.array[i] == expected[i] );
+    }
+}
+
 int main()
 {
     printf("heapsort\n");
@@ -181,4 +227,8 @@ int main()
     test_build_max_heap();
 
     test_heap_sort();
+
+    test_min_heapify();
+
+    test_build_min_heap();
 }

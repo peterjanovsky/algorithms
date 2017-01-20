@@ -9,3 +9,5 @@ void exchange(heap *h, int x, int y);
 void max_heapify(heap *h, int i);
 void build_max_heap(heap *h);
 void heap_sort(heap *h);
+void min_heapify(heap *h, int i);
+void build_min_heap(heap * h);

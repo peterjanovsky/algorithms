@@ -34,6 +34,24 @@
  *    value of its parent
  *      A[PARENT(i)] >= A[i]
  *
+ * example of min-heap
+ *
+ *             14
+ *           /    \
+ *         32      23
+ *       /   \    /  \
+ *     50    53  41  87
+ *    /  \   /
+ *   64  90 54
+ *
+ * represented as an array
+ *
+ *          -----------------------------------------------------------------------
+ * value    |  14  |  32  |  23  |  50  |  53  |  41  |  87  |  64  |  90  |  54  |
+ *          -----------------------------------------------------------------------
+ * offset   |   0  |   1  |   2  |   3  |   4  |   5  |   6  |   7  |   8  |   9  |
+ *          -----------------------------------------------------------------------
+ *
  * min-heap property
  *    for every node i, other than the root the value of the node is at minimum the
  *    value of its parent
@@ -166,7 +184,7 @@ void max_heapify(heap *h, int i)
     /* assign the node's left child's index if the index of the left child is
      * within the array's boundaries and the offset's value is greater than the
      * node's value. otherwise the node might be the largest depending upon the
-     * following conditional checks
+     * proceeding conditional checks
      */
     if ( (l < h->size) && (h->array[l] > h->array[i]) )
         largest = l;
@@ -229,4 +247,86 @@ void heap_sort(heap *h)
         h->size = h->size-1;
         max_heapify(h, 0);
     }
+}
+
+/*
+ * Function: min_heapify
+ * ---------------------
+ * maintains the heap property, the function assumes the binary trees rooted at
+ * LEFT(i) and RIGHT(i) are min-heaps, but that A[i] might be larger than its
+ * children, thus violating the min-heap property. whenever called on a node,
+ * the function lets the value at A[i] "float down" in the min-heap ensuring
+ * the subtree rooted at the node obey the min-heap property
+ *
+ * h: heap
+ * i: node's index in array
+ *
+ * returns: void (heap parameter is a pointer)
+ */
+void min_heapify(heap *h, int i)
+{
+    int smallest = 0;
+
+    /* find the node's children by shifting its array index providing the offset
+     * into the array for the left and right children
+     *
+     * see example of max-heap represented as an array above
+     */
+    int l = left(i);
+    int r = right(i);
+
+    /* within each step store the index of what is determined to be the smallest
+     * of the following within a local variable
+     *    ARRAY[i]
+     *    ARRAY[LEFT(i)]
+     *    ARRAY[RIGHT(i)]
+     *
+     * if A[i] is the smallest, then the subtree rooted at the node is already a
+     * min-heap and the procedure terminates. otherwise one of the two children
+     * has the smallest element and A[i] is swapped with A[smallest], causing the
+     * node and its children to satisfy the min-heap property. this routine is
+     * recursive as the subtree rooted at smallest might violate the min-heap
+     */
+
+    /* assign the node's left child's index if the index of the left child is
+     * within the array's boundaries and the offset's value is smaller than the
+     * node's value. otherwise the node might be the smallest depending upon the
+     * proceedinging conditional checks
+     */
+    if ( (l < h->size) && (h->array[l] < h->array[i]) )
+        smallest = l;
+    else
+        smallest = i;
+
+    /* assign the node's right child's index if the index of the right child is
+     * within the array's boundaries and the offset's value is smaller than the
+     * node's value
+     */
+    if ( (r < h->size) && (h->array[r] < h->array[smallest]) )
+        smallest = r;
+
+    if ( smallest != i ) {
+        /* one of the node's children is smaller, swap the values at the specified
+         * offsets and ensure tree adheres to min-heap property
+         */
+        exchange(h, i, smallest);
+        min_heapify(h, smallest);
+    }
+}
+
+/*
+ * Function: build_min_heap
+ * ------------------------
+ * recursive function which walks the tree ensuring it adheres to the min-heap
+ * propery
+ *
+ * h: heap
+ *
+ * returns: void (heap parameter is a pointer)
+ */
+void build_min_heap(heap *h)
+{
+    // traverse the array backwards starting at the last node with children
+    for (int i = (h->length / 2); i >= 0; i--)
+        min_heapify(h, i);
 }
