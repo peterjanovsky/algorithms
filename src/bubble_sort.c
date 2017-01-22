@@ -8,9 +8,6 @@
  * from the end of the array to its beginning. smaller values bubble to the
  * beginning of the array
  *
- * traversing towards the end of the array and the inner loop travering towards
- * the beginning of the array.
-
  * sortable: array to sort ( signed integers )
  * size: size of sortable array
  *
