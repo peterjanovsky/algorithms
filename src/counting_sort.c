@@ -1,17 +1,18 @@
 /*
  * Function: counting_sort
  * -----------------------
- * leverages two loops traversing in opposite directions, where the outer loop
- * traverses from the beginning of the array to its end and the inner loop traverses
- * from the end of the array to its beginning. smaller values bubble to the
- * beginning of the array
+ * sorts numbers within the provided range 0 to n, where n is specified by the
+ * function parameter "k". the algorithm counts the number of occurrences of
+ * each unique integer within the specific range storing the result within a
+ * temporary array. this value is used as the offset within the final sorted
+ * array for the underlying value which it represents
  *
  * a: input array to sort ( signed integers )
  * b: sorted input array ( signed integers )
  * size: size of sortable array
  * k: range maximum
  *
- * returns: nothing
+ * returns: nothing (sorted array is a pointer)
  */
 void counting_sort(int a[], int *b, int size, int k)
 {
