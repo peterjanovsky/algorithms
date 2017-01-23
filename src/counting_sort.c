@@ -105,6 +105,8 @@ void counting_sort(int a[], int *b, int size, int k)
      *          ---------------------------------
      */
     for ( int j=(size - 1); j >= 0; j-- ) {
+        // subtract one as array uses zero-based numbering. we should enforce
+        // array lower bound constraint in the future
         b[(c[a[j]] - 1)] = a[j];
         c[a[j]] = c[a[j]] - 1;
     }
