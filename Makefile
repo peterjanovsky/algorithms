@@ -2,8 +2,9 @@ clean:
 	rm -r bin/*
 
 test:
-	gcc -o bin/counting_sort_tests tests/counting_sort_tests.c -I src/
 	gcc -o bin/bubble_sort_tests tests/bubble_sort_tests.c -I src/
+	gcc -o bin/bucket_sort_tests tests/bucket_sort_tests.c -I src/
+	gcc -o bin/counting_sort_tests tests/counting_sort_tests.c -I src/
 	gcc -o bin/heapsort_tests tests/heapsort_tests.c -I src/
 	gcc -o bin/insertion_sort_tests tests/insertion_sort_tests.c -I src/
 	gcc -o bin/merge_sort_tests tests/merge_sort_tests.c -I src/
