@@ -1,7 +1,7 @@
 /*
- * Struct: heap
- * ------------
- * backed up an array
+ * Structure: heap
+ * ---------------
+ * backed by an array
  */
 typedef struct {
     int length;   // number of elements stored within the array
