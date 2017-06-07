@@ -2,6 +2,7 @@ clean:
 	rm -r bin/*
 
 test:
+	gcc -o bin/binary_search_tree_tests tests/binary_search_tree_tests.c -I src/
 	gcc -o bin/bubble_sort_tests tests/bubble_sort_tests.c -I src/
 	gcc -o bin/bucket_sort_tests tests/bucket_sort_tests.c -I src/
 	gcc -o bin/counting_sort_tests tests/counting_sort_tests.c -I src/
