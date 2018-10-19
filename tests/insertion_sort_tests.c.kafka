@@ -1,0 +1,430 @@
+#include <assert.h>
+#include <stdio.h>
+
+// from string manipulcation
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
+#include <openssl/aes.h>
+#include <openssl/evp.h>
+
+#include <openssl/x509.h>
+#include <openssl/hmac.h>
+#include <openssl/sha.h>
+
+#include "regex.h"
+
+
+#include <syslog.h>
+#include <librdkafka/rdkafka.h>
+// end
+
+#include "insertion_sort.c"
+#include "merge_sort.c"
+#include "bubble_sort.c"
+#include "find_maximum_subarray.c"
+
+#define SIZE_OF_SMALL_ARRAY   6
+#define SIZE_OF_MEDIUM_ARRAY  10
+#define SIZE_OF_LARGE_ARRAY   16
+
+
+static int quiet = 0;
+
+
+/**
+ * Message delivery report callback.
+ * Called once for each message.
+ * See rdkafka.h for more information.
+ */
+static void msg_delivered (rd_kafka_t *rk,
+         void *payload, size_t len,
+         int error_code,
+         void *opaque, void *msg_opaque) {
+
+  if (error_code)
+    fprintf(stderr, "%% Message delivery failed: %s\n",
+      rd_kafka_err2str(error_code));
+  else if (!quiet)
+    fprintf(stderr, "%% Message delivered (%zd bytes): %.*s\n", len,
+      (int)len, (const char *)payload);
+}
+
+/**
+ * Message delivery report callback using the richer rd_kafka_message_t object.
+ */
+static void msg_delivered2 (rd_kafka_t *rk,
+                            const rd_kafka_message_t *rkmessage, void *opaque) {
+  printf("del: %s: offset %"PRId64"\n",
+         rd_kafka_err2str(rkmessage->err), rkmessage->offset);
+        if (rkmessage->err)
+    fprintf(stderr, "%% Message delivery failed: %s\n",
+                        rd_kafka_message_errstr(rkmessage));
+  else if (!quiet)
+    fprintf(stderr,
+                        "%% Message delivered (%zd bytes, offset %"PRId64", "
+                        "partition %"PRId32"): %.*s\n",
+                        rkmessage->len, rkmessage->offset,
+      rkmessage->partition,
+      (int)rkmessage->len, (const char *)rkmessage->payload);
+}
+
+
+
+
+int main()
+{
+
+
+
+
+
+rd_kafka_t *rk;
+rd_kafka_topic_t *rkt;
+rd_kafka_conf_t *conf;
+rd_kafka_topic_conf_t *topic_conf;
+char errstr[512];
+char *brokers = "localhost:9092";
+int partition = RD_KAFKA_PARTITION_UA;
+
+int report_offsets = 0;
+int run = 1;
+
+  /* Kafka configuration */
+  conf = rd_kafka_conf_new();
+
+        /* Set logger */
+//        rd_kafka_conf_set_log_cb(conf, logger);
+
+  /* Quick termination */
+//  snprintf(tmp, sizeof(tmp), "%i", SIGIO);
+//  rd_kafka_conf_set(conf, "internal.termination.signal", tmp, NULL, 0);
+
+  /* Topic configuration */
+  topic_conf = rd_kafka_topic_conf_new();
+
+
+    /*
+     * Producer
+     */
+    char buf[2048] = "sample-essage-1";
+    int sendcnt = 0;
+
+    char *topic = "test";
+
+    /* Set up a message delivery report callback.
+     * It will be called once for each message, either on successful
+     * delivery to broker, or upon failure to deliver to broker. */
+
+                /* If offset reporting (-o report) is enabled, use the
+                 * richer dr_msg_cb instead. */
+                if (report_offsets) {
+                        rd_kafka_topic_conf_set(topic_conf,
+                                                "produce.offset.report",
+                                                "true", errstr, sizeof(errstr));
+                        rd_kafka_conf_set_dr_msg_cb(conf, msg_delivered2);
+                }// else
+                //        rd_kafka_conf_set_dr_cb(conf, msg_delivered);
+
+    // Create Kafka handle
+    if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf,
+          errstr, sizeof(errstr)))) {
+      fprintf(stderr,
+        "%% Failed to create new producer: %s\n",
+        errstr);
+      exit(1);
+    }
+
+    rd_kafka_set_log_level(rk, LOG_DEBUG);
+
+    // Add brokers
+    if (rd_kafka_brokers_add(rk, brokers) == 0) {
+      fprintf(stderr, "%% No valid brokers specified\n");
+      exit(1);
+    }
+
+    // Create topic
+    rkt = rd_kafka_topic_new(rk, topic, topic_conf);
+                topic_conf = NULL; // Now owned by topic
+
+    if (!quiet)
+      fprintf(stderr,
+        "%% Type stuff and hit enter to send\n");
+
+    //while (run && fgets(buf, sizeof(buf), stdin)) {
+      size_t len = strlen(buf);
+      if (buf[len-1] == '\n')
+        buf[--len] = '\0';
+
+      // Send/Produce message
+      if (rd_kafka_produce(rkt, partition,
+               RD_KAFKA_MSG_F_COPY,
+               // Payload and length
+               buf, len,
+               // Optional key and its length
+               NULL, 0,
+               // Message opaque, provided in
+                // delivery report callback as
+                // msg_opaque.
+               NULL) == -1) {
+        fprintf(stderr,
+          "%% Failed to produce to topic %s "
+          "partition %i: %s\n",
+          rd_kafka_topic_name(rkt), partition,
+          rd_kafka_err2str(rd_kafka_last_error()));
+        // Poll to handle delivery reports
+        rd_kafka_poll(rk, 0);
+        //continue;
+      }
+
+      if (!quiet)
+        fprintf(stderr, "%% Sent %zd bytes to topic "
+          "%s partition %i\n",
+        len, rd_kafka_topic_name(rkt), partition);
+      sendcnt++;
+      // Poll to handle delivery reports
+      rd_kafka_poll(rk, 0);
+    //}
+
+    // Poll to handle delivery reports
+    rd_kafka_poll(rk, 0);
+
+    // Wait for messages to be delivered
+    while (run && rd_kafka_outq_len(rk) > 0)
+      rd_kafka_poll(rk, 100);
+
+    // Destroy topic
+    rd_kafka_topic_destroy(rkt);
+
+    // Destroy the handle
+    rd_kafka_destroy(rk);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+    printf("before");
+
+    regex_t *preg;
+    preg = malloc(sizeof(regex_t));
+*/
+
+    /**
+     * u followed by a 1 or 2 digit number
+     * phaseu
+     * phasep
+     * x (surrounded by non-word chars)
+     * y (surrounded by non-word chars)
+     * z (surrounded by non-word chars)
+     *
+     * POSIX basic regex (BRE)
+     * . matches any character except a line break
+     * ^ match the start of string
+     * $ match the end of the string
+     * * repeat the token zero or more times
+     * to match any of the above characters literally, escape them with a backslash
+     *
+     * POSIX extended regex (ERE)
+     * ? repeat the preceding token zero or once
+     * + once or more
+     * {n} n times
+     * {n,m} between n and m times
+     * {n,} n or more times
+     */
+
+
+/*
+    //char *regex = "((u[0-9]{1,2})|(phaseu)|(phasep)|[^[:space:]]+([xyz])[^[:space:]]+)";
+    //char *regex = "[(From=%2B)$][0-9]{11,}|[(From=)$][0-9]{11,}";  // matches end of string
+
+    //char *regex = "[(From=)$][0-9a-zA-Z]+[&?]";  // matches end of string WINNER!!!!!!!!!
+
+    //char *regex = "([(From=)$]|[(From=%2B)$])[0-9]+[&?]";  // matches end of string
+    //char *regex = "[(From(=|=%2B))$][0-9]+[&?]";  // matches end of string
+    char *regex = "[(From=(%2B)?)$][0-9]+[&?]";  // matches end of string
+    int rc = regcomp(preg, regex, REG_EXTENDED);
+
+    printf("after");
+
+    char buffer[512];
+    regerror(rc, preg, buffer, sizeof(buffer));
+
+    printf("error %d with value %s\n", rc, buffer);
+    printf("regex_t compiled parenthetical subexpressions: %d\n", preg->re_nsub);
+
+
+    //const char *url = "http://localhost:19095/sms/incoming?From=%2B18182009282&To=%2B18182009572&Time=1468505300&SmscId=virtualsmsc_gw0_OT53c019d4fd8b3dae37290a6738ee47d6&SmsId=54afa60f-79bc-448d-be6d-89121c2eff8d&Body=a1b377aa-4a21-4fc0-8cf2-e5827fcd615fGsmTwoSeparateSegmentsSuccessGSM-%40%C2%A3%24%C2%A5%C3%A8%C3%A9%C3%B9%C3%AC%C3%B2%C3%87%C3%98%C3%B8%C3%85%C3%A5_%5E%7B%7D%5C%5B~%5D%7C%C3%86%C3%A6%C3%9F%C3%89+%C3%84%C3%96%C3%91%C3%9C%C2%A7%C2%BF!%22%23%25%26'()*%2B%2C.%2F%C3%A4%C3%B6%C3%B1%C3%BC%C3%A0+%C2%A1%E2%82%AC%CE%94%CE%A6%CE%93%CE%9B%CE%A9%CE%A0%CE%A8%CE%A3%CE%98%CE%9E0123456789%3A%3B%3C%3D%3E%3FABCDEFHIJK&UDH=%05%00%03%17%01%01";
+
+    //const char *url = "FooFrom=%2B18182009282&To=%2B18182009572";
+    //const char *url = "FooFrom=18182009282&To=%2B18182009572";
+    const char *url = "FooFrom=123456&To=%2B18182009572";
+
+    //char *url = "cdaab";
+
+    // int regexec(const regex_t *preg, const char *string, size_t nmatch, regmatch_t pmatch[], int eflags);
+
+    size_t nmatch = 3;
+
+printf("nmatch %zu\n", nmatch);
+
+    //regmatch_t pmatch[preg->re_nsub];
+    regmatch_t pmatch[5];
+    rc = regexec(preg, url, nmatch, pmatch, 0);
+
+    if (rc == 0) {
+
+        **
+         * rm_so
+         * offset in string of the beginning of a substring. Add this value to string to
+         * get the address of that part.
+         *
+         * rm_eo
+         * offset in string of the end of the substring
+         *
+        printf("%zu matches found\n", nmatch);
+        for (int i=0; i < 5; i++) {
+            printf("match details %d with offsets %d and %d\n", i, pmatch[i].rm_so, pmatch[i].rm_eo);
+        }
+
+// offsets here are definitely WRONG!!!!!!!!
+
+// url length => 40
+// rm_so - start => 10
+// rm_eo - end => 22
+// F o o F r o m = % 2 B  1  8  1  8  2  0  0  9  2  8  2  &  T  o  =  %  2  B  1  8  1  8  2  0  0  9  5  7  2
+// 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39
+
+        // missing + in front of number
+        int len = pmatch[0].rm_eo - pmatch[0].rm_so;
+        char *number = malloc(len);
+        memcpy(number, url + pmatch[0].rm_so + 1, len - 1); // $ matches end of string (group), we need to start after
+        number[len] = '\0';
+
+        printf("number is %s with len %d from url %s with url length %d\n", number, len, url, strlen(url));
+
+        char *new_url = malloc(1024);
+
+        // copy from beginning of string to the start of regex match
+        memcpy(new_url, url, pmatch[0].rm_so + 1);
+        printf("new url after initial copy %s\n", new_url);
+
+        // copy masked phone number
+        memcpy(new_url + pmatch[0].rm_so + 1, number, len - 1);
+        printf("new url after mask application %s\n", new_url);
+
+        // copy rest of url
+        memcpy(new_url + pmatch[0].rm_so + len - 1, url + pmatch[0].rm_eo, strlen(url) - pmatch[0].rm_eo);
+
+        // offsets are probably off
+        // length of url - the chunk extracted representing the phone number + length of the masked phone number
+        // leave 
+        int new_url_len = strlen(url) - (pmatch[0].rm_eo - pmatch[0].rm_so) + len;
+        new_url[new_url_len] = '\0';
+        printf("new url after final copy %s with length %d\n", new_url, new_url_len);
+    }
+    else if (rc == REG_NOMATCH) printf("no match found\n");
+    else printf("unknown code received\n");
+
+    printf("after match\n");
+
+    regfree(preg);
+*/
+
+
+
+
+
+
+
+
+
+/*
+    printf("insertion sort\n");
+
+    int sorted[SIZE_OF_SMALL_ARRAY] = { 1, 2, 3, 4, 5, 6 };
+    int sortable[SIZE_OF_SMALL_ARRAY] = { 5, 2, 4, 6, 1, 3 };
+
+    int *result = insertion_sort( sortable, SIZE_OF_SMALL_ARRAY );
+    for ( int i=0; i < SIZE_OF_SMALL_ARRAY; i++ )
+    {
+        printf("expected: %d actual: %d\n", sorted[i], result[i]);
+        assert( sorted[i] == result[i] );
+    }
+
+    printf("merge sort\n");
+
+    int sortedMerge[SIZE_OF_LARGE_ARRAY] = { 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 2, 3, 4, 5, 6, 7 };
+    int sortableMerge[SIZE_OF_LARGE_ARRAY] = { 1, 2, 3, 4, 5, 6, 7, 8, 2, 4, 5, 7, 1, 2, 3, 6 };
+
+    int *resultMerge = merge_sort( sortableMerge, 8, 11, 15);
+    for ( int i=-0; i < SIZE_OF_LARGE_ARRAY; i++ )
+    {
+        printf("expected: %d actual: %d\n", sortedMerge[i], resultMerge[i]);
+        assert( sortedMerge[i] == resultMerge[i] );
+    }
+
+    printf("bubble sort\n");
+
+    int sortedBubble[SIZE_OF_SMALL_ARRAY] = { 1, 2, 3, 4, 5, 6 };
+    int sortableBubble[SIZE_OF_SMALL_ARRAY] = { 2, 5, 4, 6, 3, 1 };
+
+    int *resultBubble = bubble_sort( sortableBubble, SIZE_OF_SMALL_ARRAY );
+    for ( int i=0; i < SIZE_OF_SMALL_ARRAY; i++ )
+    {
+        printf("expected: %d actual: %d\n", sortedBubble[i], resultBubble[i]);
+        assert( sortedBubble[i] == resultBubble[i] );
+    }
+
+    printf("maximum crossing subarray\n");
+
+    int sortableCrossingSmall[SIZE_OF_SMALL_ARRAY] = { -6, 5, 2, -3, 7, 1 };
+
+    tuple tupSmall = find_max_crossing_subarray( sortableCrossingSmall, 0, 3, 6 );
+    printf("tuple max_left: %d max_right: %d sum: %d\n", tupSmall.max_left, tupSmall.max_right, tupSmall.sum);
+    assert( tupSmall.max_left == 1 );
+    assert( tupSmall.max_right == 5 );
+    assert( tupSmall.sum == 12 );
+
+    int sortableCrossingMedium[SIZE_OF_MEDIUM_ARRAY] = { -6, 5, 2, -3, 7, 1, -5, 8, -4, -9 };
+
+    tuple tupMedium = find_max_crossing_subarray( sortableCrossingMedium, 0, 5, 10 );
+    printf("tuple max_left: %d max_right: %d sum: %d\n", tupMedium.max_left, tupMedium.max_right, tupMedium.sum);
+    assert( tupMedium.max_left == 1 );
+    assert( tupMedium.max_right == 7 );
+    assert( tupMedium.sum == 15 );
+
+    printf("maximum subarray\n");
+
+    int sortableSingleElem[1] = { -6 };
+
+    tuple tupSingleElem = find_max_subarray( sortableSingleElem, 0, 0 );
+    printf("tuple max_left: %d max_right: %d sum: %d\n", tupSingleElem.max_left, tupSingleElem.max_right, tupSingleElem.sum);
+    assert( tupSingleElem.max_left == 0 );
+    assert( tupSingleElem.max_right == 0 );
+    assert( tupSingleElem.sum == -6 );
+
+    int sortableMax[SIZE_OF_SMALL_ARRAY] = { -6, 5, 2, -3, 7, 1 };
+
+    tuple tupMax = find_max_subarray( sortableMax, 0, 6 );
+    printf("tuple max_left: %d max_right: %d sum: %d\n", tupMax.max_left, tupMax.max_right, tupMax.sum);
+    assert( tupMax.max_left == 1 );
+    assert( tupMax.max_right == 5 );
+    assert( tupMax.sum == 12 );
+*/
+}

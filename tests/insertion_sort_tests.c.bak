@@ -1,0 +1,672 @@
+#include <assert.h>
+#include <stdio.h>
+
+// from string manipulcation
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
+#include <openssl/aes.h>
+#include <openssl/evp.h>
+
+#include <openssl/x509.h>
+#include <openssl/hmac.h>
+#include <openssl/sha.h>
+
+#include "regex.h"
+// end
+
+#include "insertion_sort.c"
+#include "merge_sort.c"
+#include "bubble_sort.c"
+#include "find_maximum_subarray.c"
+
+#define SIZE_OF_SMALL_ARRAY   6
+#define SIZE_OF_MEDIUM_ARRAY  10
+#define SIZE_OF_LARGE_ARRAY   16
+
+void hex_to_binary(unsigned char *buf, unsigned char *hex)
+{
+  for( ; sscanf( hex, "%2x", buf++ ) == 1 ; hex+=2 );
+  *buf = 0;  // null terminate -- precaution
+}
+
+void print_hex(unsigned char *buf, int len)
+{
+  int i;
+  int n;
+
+  for(i=0,n=0;i<len;i++){
+    //if(n > 7){
+    //  printf("\n");
+    //  n = 0;
+    //}
+    printf("%02X",buf[i]);
+    //n++;
+  }
+  printf("\n");
+}
+
+void hash_str(unsigned char *data, long len, char *pairs)
+{
+    unsigned char digest[SHA224_DIGEST_LENGTH];
+//    char string[] = "hello world";
+//    unsigned char *string = malloc(12);
+//    memcpy(string, "hello world", strlen(string));
+//    string[12] = '\0';
+    
+//    SHA224((unsigned char *)&string, strlen(string), (unsigned char*)&digest1);    
+    SHA224(data, len, (unsigned char*)&digest);    
+ 
+    printf("digest len: %d with\n", strlen(digest));
+    for (int i=0; i < strlen(digest); i++) {
+        int byte = digest[i];
+        int byte2 = (char)digest[i];
+        printf("char: %c byte: %d byte2: %d\n", digest[i], byte, byte2);
+        //printf("%d=%c |", i, digest[i]);
+    }
+    printf("\n");
+    pairs = malloc(SHA224_DIGEST_LENGTH*2+1);
+printf("after malloc, SHA224 len %d\n", SHA224_DIGEST_LENGTH);
+
+
+ 
+    for(int i = 0; i < SHA224_DIGEST_LENGTH; i++) {
+         printf("iteration %d", i);
+         printf("-with char %d\n", (unsigned int)digest[i]);
+         if (i != 27)
+            sprintf(&pairs[i*2], "%02x", (unsigned int)digest[i]);
+          else {
+            printf("i is 27\n");
+            break;
+          }
+    }
+printf("after hex");
+    pairs[SHA224_DIGEST_LENGTH*2+1] = '\0';
+}
+
+char *sanitize(unsigned char *data, long len)
+{
+    unsigned char digest[SHA224_DIGEST_LENGTH];
+//    char string[] = "hello world";
+//    unsigned char *string = malloc(12);
+//    memcpy(string, "hello world", strlen(string));
+//    string[12] = '\0';
+    
+//    SHA224((unsigned char *)&string, strlen(string), (unsigned char*)&digest1);    
+    SHA224(data, len, (unsigned char*)&digest);    
+ 
+    printf("digest len: %d with\n", strlen(digest));
+    for (int i=0; i < strlen(digest); i++) {
+        int byte = digest[i];
+        int byte2 = (char)digest[i];
+        printf("char: %c byte: %d byte2: %d\n", digest[i], byte, byte2);
+        //printf("%d=%c |", i, digest[i]);
+    }
+    printf("\n");
+
+
+    //char *dest = malloc(strlen(digest));
+    //char *result = t_tob64(dest, digest, strlen(digest));
+
+
+
+    //static char pairs[SHA224_DIGEST_LENGTH*2+1];
+
+    char *pairs = malloc(SHA224_DIGEST_LENGTH*2+1);
+ 
+    for(int i = 0; i < SHA224_DIGEST_LENGTH; i++)
+         sprintf(&pairs[i*2], "%02x", (unsigned int)digest[i]);
+    pairs[SHA224_DIGEST_LENGTH*2+1] = '\0';
+
+/*
+    char *pairs;
+    hash_str(&data, len, pairs);
+*/
+
+    printf("within func SHA224 digest: %s with length: %d for string: %s\n", pairs, strlen(pairs), data);
+    return pairs;
+//    return data;
+}
+
+void destroy(char *data)
+{
+printf("FREEEEEEEEEEEEEEEE\n");
+    free(data);
+}
+
+void swap2(char *ptr, char **ptr2ptr)
+{
+    //ptr2ptr = &ptr;
+/*
+    *ptr2ptr = malloc(1024);
+    memcpy(&ptr2ptr, ptr, strlen(ptr));
+    printf("&ptr=%p\n", (void *)&ptr);
+    printf("ptr2ptr=%p\n", (void *)ptr2ptr);
+    printf("*ptr2ptr=%p\n", (void *)*ptr2ptr);
+    //printf("**ptr2ptr=%d\n",**ptr2ptr);
+*/
+//    *ptr = "65";
+
+    
+    *ptr2ptr = malloc(1024);
+    printf("strlen(ptr) %d\n", strlen(ptr));
+    memcpy(*ptr2ptr, ptr, 3);
+    //strcat(*ptr2ptr, "0x%x", (unsigned int)ptr[0]);
+
+/*
+    for (int i=0; i < strlen(ptr); i++) {
+        printf("loop %d with char %c and int %d\n", i, ptr[i], (unsigned int)ptr[i]);
+        sprintf(&ptr2ptr[i*2], "%02x", (unsigned int)ptr[i]);
+        printf("after sprintf %d\n", i);
+    }
+
+    printf("value of string after copy: %s\n", *(&ptr2ptr));
+*/
+    // works
+    //*ptr2ptr = ptr;
+}
+
+void swap1(const char *t1, char **t2)
+{
+    //char *t2;
+    swap2(t1, t2);
+
+    //return "";
+   //return t2;
+
+
+    // works
+    //*t2 = t1;
+}
+
+char *swap0(const char *t1)
+{
+    char *t2;
+    swap2(t1, &t2);
+    return t2;
+}
+
+int main()
+{
+
+
+
+    printf("before");
+
+    regex_t *preg;
+    preg = malloc(sizeof(regex_t));
+
+    //char *regex = "((u[0-9]{1,2})|(phaseu)|(phasep)|[^[:space:]]+([xyz])[^[:space:]]+)";
+    char *regex = "From=";
+    int rc = regcomp(preg, regex, REG_EXTENDED);
+
+    printf("after");
+
+    char buffer[512];
+    regerror(rc, preg, buffer, sizeof(buffer));
+
+    printf("error %d with value %s\n", rc, buffer);
+
+    char *url = "http://localhost:19095/sms/incoming?From=%2B18182009282&To=%2B18182009572&Time=1468505300&SmscId=virtualsmsc_gw0_OT53c019d4fd8b3dae37290a6738ee47d6&SmsId=54afa60f-79bc-448d-be6d-89121c2eff8d&Body=a1b377aa-4a21-4fc0-8cf2-e5827fcd615fGsmTwoSeparateSegmentsSuccessGSM-%40%C2%A3%24%C2%A5%C3%A8%C3%A9%C3%B9%C3%AC%C3%B2%C3%87%C3%98%C3%B8%C3%85%C3%A5_%5E%7B%7D%5C%5B~%5D%7C%C3%86%C3%A6%C3%9F%C3%89+%C3%84%C3%96%C3%91%C3%9C%C2%A7%C2%BF!%22%23%25%26'()*%2B%2C.%2F%C3%A4%C3%B6%C3%B1%C3%BC%C3%A0+%C2%A1%E2%82%AC%CE%94%CE%A6%CE%93%CE%9B%CE%A9%CE%A0%CE%A8%CE%A3%CE%98%CE%9E0123456789%3A%3B%3C%3D%3E%3FABCDEFHIJK&UDH=%05%00%03%17%01%01";
+    // int regexec(const regex_t *preg, const char *string, size_t nmatch, regmatch_t pmatch[], int eflags);
+
+    size_t nmatch;
+    regmatch_t pmatch[preg->re_nsub];
+    rc = regexec(preg, url, nmatch, pmatch, 0);
+
+    if (rc == 0) {
+        printf("match found\n");
+        for (int i=0; i < preg->re_nsub; i++) {
+            printf("match details %d with %s\n", i, &pmatch[i]);
+        }
+    }
+    else if (rc == REG_NOMATCH) printf("no match found\n");
+    else printf("unknown code received\n");
+
+    printf("after match\n");
+
+
+
+
+
+
+
+    char *is_null_maybe;
+    char *is_null_yes = NULL;
+    char *is_null_no = "some-value";
+
+    if (!is_null_maybe) printf("meets 1\n");
+    if (is_null_maybe == NULL) printf("meets 2\n");
+    if (is_null_maybe) printf("meets 3\n");
+
+    if (!is_null_yes) printf("meets 4\n");
+    if (is_null_yes == NULL) printf("meets 5\n");
+    if (is_null_yes) printf("meets 6\n");
+
+    //const char *t1 = "hi-there";
+    //char *t2;
+    const char *t1 = "howdie";
+    char *t2;
+
+//    t1 = NULL;
+//    t2 = NULL;
+
+//    char *t3 = swap0(t1);
+//    printf("swap0 t1 %s and t3 %s\n", t1, t3);
+
+    swap1(t1, &t2);
+    printf("swap1 t1 %s and t2 %s\n", t1, t2);
+
+    unsigned char dataT[] = {0x61,0x62,0x63}; // "abc"
+
+    unsigned char *string = "hello world";//malloc(12);
+    printf("string: %s with length: %d\n", string, strlen(string));
+    
+    for (int i=0; i < strlen(string); i++) {
+        int byte = string[i];
+        printf("char: %c byte: %d\n", string[i], byte);
+    }
+
+
+    int size = strlen(string);
+    char converted[size*2 + 1];
+    for(int i=0; i<size; i++) {
+        sprintf(&converted[i*2], "%02X", string[i]);
+    }
+    printf("converted: %s form of string: %s\n", converted, string);
+
+
+
+    char *result = sanitize(string, strlen(string));
+    //char *result = sanitize(converted, strlen(converted));
+    printf("SHA224 digest: %s with length: %d for string: %s\n", result, strlen(result), string);
+    printf("result: ");
+    for (int i=0; i < 56; i++) printf("%d=%c | ", i, result[i]);
+    printf("\n");
+
+    destroy(result);
+
+
+
+    unsigned char digest2[SHA224_DIGEST_LENGTH];
+    char string2[] = "hello world";
+    printf("string2: %s with length: %d\n", string2, strlen(string2));
+    
+    SHA224((unsigned char *)&string2, strlen(string2), (unsigned char*)&digest2);    
+ 
+    char pairs[SHA224_DIGEST_LENGTH*2+1];
+    for(int i = 0; i < SHA224_DIGEST_LENGTH; i++)
+         sprintf(&pairs[i*2], "%02x", (unsigned int)digest2[i]);
+    pairs[SHA224_DIGEST_LENGTH*2+1-1] = '\0';
+ 
+    printf("SHA224 digest: %s with length: %d for string: %s\n", pairs, strlen(pairs), string2);
+
+
+
+    unsigned char *string3 = "goodbye world";//malloc(12);
+    printf("string3: %s with length: %d\n", string3, strlen(string3));
+
+    char *result3 = sanitize(string3, strlen(string3));
+    printf("SHA224 digest: %s with length: %d for string: %s\n", result3, strlen(result3), string3);
+
+    destroy(result3);
+
+/**
+  PBEKeySpec(char[] password, byte[] salt, int iterationCount, int keyLength)
+
+  int EVP_BytesToKey(const EVP_CIPHER *type,const EVP_MD *md,
+                       const unsigned char *salt,
+                       const unsigned char *data, int datal, int count,
+                       unsigned char *key,unsigned char *iv);
+    const EVP_CIPHER *cipher;
+    const EVP_MD *digest;
+    //unsigned char key[EVP_MAX_KEY_LENGTH], iv[EVP_MAX_IV_LENGTH];
+    unsigned char key[48], iv[32];
+    const char *passphrase = "foo-bar";//-baz-oh-ya!";
+    //const unsigned char *salt = "abc123";//twilio";
+    const unsigned char salt[8] = "abc123";//twilio";
+
+    //hex_to_binary(salt, "abc123");
+
+    int res = EVP_BytesToKey(
+        EVP_aes_256_cbc(),  // cipher
+        EVP_sha1(),         // message digest
+        (unsigned char *)&salt,
+        (unsigned char *)passphrase,
+        strlen(passphrase),// * 8,
+        65536,
+        key,
+        //iv);
+        NULL);
+
+    printf("passphrase %s with length %d\n", passphrase, strlen(passphrase));
+    //printf("salt %s with length %d\n", salt, strlen(salt));
+    //print_hex(salt, strlen(salt));
+    printf("key max: %d iv max %d\n", EVP_MAX_KEY_LENGTH, EVP_MAX_IV_LENGTH);
+    printf("result %d and key %s key length %d\n", res, key, strlen(key));
+
+char ch = 'Z';
+int i = ch;
+printf("Integer: %d\t Character: %c", i, ch);
+
+    for (int i=0; i < strlen(key); i++) {
+        int byte = key[i];
+        printf("char: %c byte: %d\n", key[i], byte);
+    }
+
+    char *sanitized = gw_malloc(ostr->len);
+    memset(sanitized + ostr->len - 4, 'x', 4);
+    memcpy(sanitized, ostr->data, ostr->len - 4);
+    sanitized[ostr->len] = '\0';
+    return sanitized;
+*/
+
+
+
+
+    char aaa[8] = "twilio";
+    printf("aaa: %s with length: %d\n", aaa, strlen(aaa));
+    for (int i=0; i < 8; i++) {
+        printf("character at %d is %c\n", i, aaa[i]);
+        if (aaa[i] == '\0') printf("char is null terminator\n");
+        if (aaa[i] == 0) printf("char is empty\n");
+    }
+
+
+   char *src = malloc(13);
+   sprintf(src, "+13052000108");////www.tutorialspoint.com";
+
+   char *dest = malloc(13);//[50];
+
+   printf("Before memcpy source %s with size %d and dest = %s with size %d\n", src, strlen(src),  dest, strlen(dest));
+   memcpy(dest, src, 13 - 5);
+   printf("After memcpy source %s dest = %s\n", src, dest);
+   memset(dest + 13 - 5, 'x', 4);
+   printf("After memset source %s dest = %s\n", src, dest);
+   dest[12] = '\0';
+
+    src[0] = 'a';
+    src[1] = 'b';
+
+
+   printf("After edit srouce %s dest = %s\n", src, dest);
+
+
+
+
+
+    unsigned char *p, *d, buf[10], charbuf[5];
+    buf[0] = '\0';
+    charbuf[0] = '\0';
+    p = buf;
+    d = charbuf;
+
+    int values[5] = { 102, 100, 200, 240, 25 };
+
+/*
+    unsigned char **parsed = (char **)malloc(3 * sizeof(char *));
+    for (int i=0; i < 3; i++)
+        parsed[i] = (char *)malloc(10 * 1024);
+*/
+    unsigned char ***parsed = (unsigned char ***)malloc(3 * sizeof(unsigned char **));
+    for (int i=0; i < 3; i++) {
+        parsed[i] = (unsigned char **)malloc(2 * sizeof(unsigned char *));
+        parsed[i][0] = (unsigned char *)malloc(10);
+        parsed[i][1] = (unsigned char *)malloc(7);
+    }
+
+    printf("number of elements in array: %d\n", sizeof(parsed)/sizeof(parsed[0]));
+    printf("size of array: %d\n", sizeof(parsed));
+    printf("size of array position[0]: %d\n", sizeof(parsed[0]));
+    printf("size of array position[0][0]: %d\n", sizeof(parsed[0][0]));
+    printf("size of array position[0][1]: %d\n", sizeof(parsed[0][1]));
+    printf("size of char: %d\n", sizeof(char));
+
+
+    parsed[0][0] = "foo-1234561111111111111111111111111111111111111111111";
+    parsed[0][2] = "foo-1234561111111111111111111111111111111111111111111";
+    parsed[0][1] = "charfoo";
+
+    parsed[1][0] = "bar-123456";
+    parsed[1][1] = "charbar";
+
+    parsed[2][0] = "baz-123456";
+    parsed[2][1] = "charbaz";
+
+printf("after\n");
+puts(parsed[0]);
+
+    printf("parsed[0][0]: %s\n", parsed[0][0]);
+    printf("parsed[0][1]: %s\n", parsed[0][1]);
+
+    printf("parsed[1][0]: %s\n", parsed[1][0]);
+    printf("parsed[1][1]: %s\n", parsed[1][1]);
+
+    printf("parsed[2][0]: %s\n", parsed[2][0]);
+    printf("parsed[1][1]: %s\n", parsed[2][1]);
+
+    //unsigned char *combined = (unsigned char *)malloc(3 * (10 + 5));
+    unsigned char combined[1024];
+    unsigned char zombined[256];
+    unsigned char *cptr, *zptr;
+
+    unsigned char msg[] = "abcdefghijklmnopqrstuvwxyz_1234567890";
+    strncpy(combined, msg, sizeof(combined));
+
+    printf("msg size: %d\n", sizeof(msg));
+    printf("msg length: %d\n", strlen(msg));
+
+    //combined[0] = '\0';
+    //zombined[0] = '\0';
+    cptr = &combined[strlen(msg)];
+    zptr = zombined;
+
+    *cptr++ = 'A';
+    *cptr++ = 'B';
+    *cptr++ = 'C';
+    *cptr++ = 'D';
+    *cptr++ = 'E';
+
+    long foo = ULONG_MAX;
+    long bar = ULONG_MAX;
+    int baz = INT_MAX;
+    int level = INT_MAX;
+
+    unsigned char temp[1024*15];
+    printf("Octet string len: %lu size: %lu immutable: %d\n",
+        foo, bar, baz);
+    sprintf(temp, "Octet string len: %lu size: %lu immutable: %d\n",
+        foo, bar, baz);
+
+    printf(temp);
+
+    unsigned char temp2[1024];
+    sprintf(temp2, "%*sdata: %s  %s\n", 5, "", combined, combined);
+    strcat(temp, temp2);
+    strcat(temp, temp2);
+    strcat(temp, temp2);
+    strcat(temp, temp2);
+    strcat(temp, temp2);
+    strcat(temp, temp2);
+    strcat(temp, temp2);
+    strcat(temp, temp2);
+    strcat(temp, temp2);
+    strcat(temp, temp2);
+    strcat(temp, temp2);
+    strcat(temp, temp2);
+    strcat(temp, temp2);
+    strcat(temp, temp2);
+    strcat(temp, temp2);
+    strcat(temp, temp2);
+
+    printf(temp);
+
+    printf("long size %lu\n", foo);
+    printf("long size %lu\n", sizeof(foo));
+
+    printf("combined: %s\n", combined);
+    printf("combined: %s\n", &combined);
+    printf("combined: %s\n", cptr);
+    printf("combined: %s\n", &cptr);
+    printf("combined: %s\n", *cptr);
+    printf("sizeof(combined): %d\n", sizeof(combined));
+
+/*
+    combined[0] = '\0';
+    combined[0] = "0123456789";
+    combined[10] = "abcde";
+    combined[15] = "0123456789";
+    combined[25] = "abcde";
+    combined[30] = "0123456789";
+    combined[40] = "abcde";
+*/
+
+
+/*
+    char A[8];
+    char B[8];
+    strncpy(A, "excessiveeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeexcessiveeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeexcessiveeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", 120);
+*/
+
+    //combined[0] = '\0';
+//    strncpy(combined, "01234567890000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", sizeof("01234567890000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"));
+
+/*
+    strcat(combined, "abcde");
+    strcat(combined, "0123456789");
+    strcat(combined, "fghij");
+    strcat(combined, "0123456789");
+    strcat(combined, "klmnopppppppppppppppppppppp");
+
+    strncpy(zombined, "abcdefghijklmnopqrstuvwzyz", sizeof(zombined));
+
+    printf("combined: %s\n", combined);
+    printf("sizeof(combined): %d\n", sizeof(combined));
+    printf("zombined: %s\n", zombined);
+
+    if (30 % 16 == 0)
+        printf("clean division\n");
+    else
+        printf("remainder\n");
+
+    int res = 30 / 16;
+    printf("division result: %d\n", res);
+
+    int c = 200;
+    sprintf(p, "%02x", c);
+
+    printf("after sprintf: %s\n", p);
+    puts(p);
+
+    p = strchr(p, '\0');
+
+    printf("after strchr: %s\n", p);
+    puts(p);
+
+    if (isprint(c))
+        *d++ = c;
+    else
+        *d++ = '.';
+
+    *d = '\0';
+    printf("after isprint: %s %s\n", buf, charbuf);
+    puts(d);
+
+
+
+    int c2 = 100;
+    sprintf(p, "%02x", c2);
+
+    printf("after sprintf: %s\n", p);
+    puts(p);
+
+    p = strchr(p, '\0');
+
+    printf("after strchr: %s\n", *p);
+    puts(*p);
+
+    if (isprint(c))
+        *d++ = c2;
+    else
+        *d++ = '.';
+
+    printf("after isprint: %s %s\n", buf, charbuf);
+    puts(&d);
+*/
+
+
+
+/*
+    printf("insertion sort\n");
+
+    int sorted[SIZE_OF_SMALL_ARRAY] = { 1, 2, 3, 4, 5, 6 };
+    int sortable[SIZE_OF_SMALL_ARRAY] = { 5, 2, 4, 6, 1, 3 };
+
+    int *result = insertion_sort( sortable, SIZE_OF_SMALL_ARRAY );
+    for ( int i=0; i < SIZE_OF_SMALL_ARRAY; i++ )
+    {
+        printf("expected: %d actual: %d\n", sorted[i], result[i]);
+        assert( sorted[i] == result[i] );
+    }
+
+    printf("merge sort\n");
+
+    int sortedMerge[SIZE_OF_LARGE_ARRAY] = { 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 2, 3, 4, 5, 6, 7 };
+    int sortableMerge[SIZE_OF_LARGE_ARRAY] = { 1, 2, 3, 4, 5, 6, 7, 8, 2, 4, 5, 7, 1, 2, 3, 6 };
+
+    int *resultMerge = merge_sort( sortableMerge, 8, 11, 15);
+    for ( int i=-0; i < SIZE_OF_LARGE_ARRAY; i++ )
+    {
+        printf("expected: %d actual: %d\n", sortedMerge[i], resultMerge[i]);
+        assert( sortedMerge[i] == resultMerge[i] );
+    }
+
+    printf("bubble sort\n");
+
+    int sortedBubble[SIZE_OF_SMALL_ARRAY] = { 1, 2, 3, 4, 5, 6 };
+    int sortableBubble[SIZE_OF_SMALL_ARRAY] = { 2, 5, 4, 6, 3, 1 };
+
+    int *resultBubble = bubble_sort( sortableBubble, SIZE_OF_SMALL_ARRAY );
+    for ( int i=0; i < SIZE_OF_SMALL_ARRAY; i++ )
+    {
+        printf("expected: %d actual: %d\n", sortedBubble[i], resultBubble[i]);
+        assert( sortedBubble[i] == resultBubble[i] );
+    }
+
+    printf("maximum crossing subarray\n");
+
+    int sortableCrossingSmall[SIZE_OF_SMALL_ARRAY] = { -6, 5, 2, -3, 7, 1 };
+
+    tuple tupSmall = find_max_crossing_subarray( sortableCrossingSmall, 0, 3, 6 );
+    printf("tuple max_left: %d max_right: %d sum: %d\n", tupSmall.max_left, tupSmall.max_right, tupSmall.sum);
+    assert( tupSmall.max_left == 1 );
+    assert( tupSmall.max_right == 5 );
+    assert( tupSmall.sum == 12 );
+
+    int sortableCrossingMedium[SIZE_OF_MEDIUM_ARRAY] = { -6, 5, 2, -3, 7, 1, -5, 8, -4, -9 };
+
+    tuple tupMedium = find_max_crossing_subarray( sortableCrossingMedium, 0, 5, 10 );
+    printf("tuple max_left: %d max_right: %d sum: %d\n", tupMedium.max_left, tupMedium.max_right, tupMedium.sum);
+    assert( tupMedium.max_left == 1 );
+    assert( tupMedium.max_right == 7 );
+    assert( tupMedium.sum == 15 );
+
+    printf("maximum subarray\n");
+
+    int sortableSingleElem[1] = { -6 };
+
+    tuple tupSingleElem = find_max_subarray( sortableSingleElem, 0, 0 );
+    printf("tuple max_left: %d max_right: %d sum: %d\n", tupSingleElem.max_left, tupSingleElem.max_right, tupSingleElem.sum);
+    assert( tupSingleElem.max_left == 0 );
+    assert( tupSingleElem.max_right == 0 );
+    assert( tupSingleElem.sum == -6 );
+
+    int sortableMax[SIZE_OF_SMALL_ARRAY] = { -6, 5, 2, -3, 7, 1 };
+
+    tuple tupMax = find_max_subarray( sortableMax, 0, 6 );
+    printf("tuple max_left: %d max_right: %d sum: %d\n", tupMax.max_left, tupMax.max_right, tupMax.sum);
+    assert( tupMax.max_left == 1 );
+    assert( tupMax.max_right == 5 );
+    assert( tupMax.sum == 12 );
+*/
+}

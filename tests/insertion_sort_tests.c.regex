@@ -1,0 +1,333 @@
+#include <assert.h>
+#include <stdio.h>
+
+// from string manipulcation
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
+#include <openssl/aes.h>
+#include <openssl/evp.h>
+
+#include <openssl/x509.h>
+#include <openssl/hmac.h>
+#include <openssl/sha.h>
+
+#include "regex.h"
+// end
+
+#include "insertion_sort.c"
+#include "merge_sort.c"
+#include "bubble_sort.c"
+#include "find_maximum_subarray.c"
+
+#define SIZE_OF_SMALL_ARRAY   6
+#define SIZE_OF_MEDIUM_ARRAY  10
+#define SIZE_OF_LARGE_ARRAY   16
+
+char *sanitize_str_1(const char *str)
+{
+    int size = strlen(str) + 1;
+    char *temp;
+    temp = malloc(size);
+    memcpy(temp, str, size-1);
+    memset(temp, 'a', 1);
+    temp[size-1] = '\0';
+    return temp;
+}
+
+char *sanitize_str_2(const char *str)
+{
+    int size = strlen(str) + 1;
+    char *temp;
+    temp = malloc(size);
+    memcpy(temp, str, size-1);
+    temp[size-1] = '\0';
+    memset(temp, 'b', 1);
+    return temp;
+}
+
+typedef char *(*sanitize_func)(const char *str);
+
+char *cleanse(const char *str_to_cleanse, sanitize_func func)
+{
+    int size = strlen(str_to_cleanse) + 1;
+    char *cleansed;
+    cleansed = malloc(size);
+
+    char *sanitized = func(str_to_cleanse);
+    memcpy(cleansed, sanitized, size-1);
+    free(sanitized);
+
+    cleansed[size-1];
+    return cleansed;
+}
+
+int main()
+{
+    char *temp_str = "str to cleanse";
+    char *cleansed_str = cleanse(temp_str, sanitize_str_1);
+    printf("original str: %s and cleansed str: %s\n", temp_str, cleansed_str);
+
+
+    int matched = 0;
+    if (matched) printf("MATCHED\n");
+    else printf("NOT MATCHED\n");
+
+    printf("before");
+
+    regex_t *preg;
+    preg = malloc(sizeof(regex_t));
+
+    /**
+     * u followed by a 1 or 2 digit number
+     * phaseu
+     * phasep
+     * x (surrounded by non-word chars)
+     * y (surrounded by non-word chars)
+     * z (surrounded by non-word chars)
+     *
+     * POSIX basic regex (BRE)
+     * . matches any character except a line break
+     * ^ match the start of string
+     * $ match the end of the string
+     * * repeat the token zero or more times
+     * to match any of the above characters literally, escape them with a backslash
+     *
+     * POSIX extended regex (ERE)
+     * ? repeat the preceding token zero or once
+     * + once or more
+     * {n} n times
+     * {n,m} between n and m times
+     * {n,} n or more times
+     */
+    //char *regex = "((u[0-9]{1,2})|(phaseu)|(phasep)|[^[:space:]]+([xyz])[^[:space:]]+)";
+    //char *regex = "[(From=%2B)$][0-9]{11,}|[(From=)$][0-9]{11,}";  // matches end of string
+
+    //char *regex = "[(From=)$][0-9a-zA-Z]+[&?]";  // matches end of string WINNER!!!!!!!!!
+
+    //char *regex = "([(From=)$]|[(From=%2B)$])[0-9]+[&?]";  // matches end of string
+    //char *regex = "[(From(=|=%2B))$][0-9]+[&?]";  // matches end of string
+    //char *regex = "[(From=(%2B)?)$][0-9]+[&?]";  // matches end of string
+
+//    char *regex = "[(From=(%2B)?$[0-9]+)]";  // matches end of string
+//    char *regex = "From=(%2B)?([^&]*)";  // matches end of string
+
+
+    //char *regex = "From=(%2B)?([^&]*)";  // matches end of string
+    //char *regex = "From=(%2B)?([A-Za-z0-9]+)[&]{0,1}";  // matches end of string
+
+// MOST RECENT
+    char *regex = "to=(%2B)?([A-Za-z0-9]+)[&]{0,1}";  // matches end of string
+
+
+    //char *regex = "Text%3A([^&+]+)[&+]{0,1}";
+    //char *regex = "text:([^ ]+)[ ]{0,1}";
+
+    int rc = regcomp(preg, regex, REG_EXTENDED|REG_ICASE);
+
+    printf("after");
+
+    char buffer[512];
+    regerror(rc, preg, buffer, sizeof(buffer));
+
+    printf("error %d with value %s\n", rc, buffer);
+    printf("regex_t compiled parenthetical subexpressions: %d\n", preg->re_nsub);
+
+
+    //const char *url = "http://localhost:19095/sms/incoming?From=%2B18182009282&To=%2B18182009572&Time=1468505300&SmscId=virtualsmsc_gw0_OT53c019d4fd8b3dae37290a6738ee47d6&SmsId=54afa60f-79bc-448d-be6d-89121c2eff8d&Body=a1b377aa-4a21-4fc0-8cf2-e5827fcd615fGsmTwoSeparateSegmentsSuccessGSM-%40%C2%A3%24%C2%A5%C3%A8%C3%A9%C3%B9%C3%AC%C3%B2%C3%87%C3%98%C3%B8%C3%85%C3%A5_%5E%7B%7D%5C%5B~%5D%7C%C3%86%C3%A6%C3%9F%C3%89+%C3%84%C3%96%C3%91%C3%9C%C2%A7%C2%BF!%22%23%25%26'()*%2B%2C.%2F%C3%A4%C3%B6%C3%B1%C3%BC%C3%A0+%C2%A1%E2%82%AC%CE%94%CE%A6%CE%93%CE%9B%CE%A9%CE%A0%CE%A8%CE%A3%CE%98%CE%9E0123456789%3A%3B%3C%3D%3E%3FABCDEFHIJK&UDH=%05%00%03%17%01%01";
+
+    //const char *url = "FooFrom=%2B18182009282&To=%2B18182009572";
+    //const char *url = "FooFrom=18182009282&To=%2B18182009572";
+
+
+// MOST RECENT
+    const char *url = "http://127.0.0.1:19095/v1/kanneldlr?dlr-mode=ignore&sid=SMf9c8b988b4fd41168fd8e4d6f0bd8344&foreign_id=7bc54d2d-cc37-4c13-87a7-ace29c7b9a1d&shard=&num_segments=1&status=8&answer=ACK%2F&metadata=&to=%2B18089490063&smsc_id=virtualsmsc_gw0_OT53c019d4fd8b3dae37290a6738ee47d6";
+
+//const char *url = "msg:100:id:28 sub:001 dlvrd:001 submit date:1608011057 done date:1608011057 stat:DELIVRD err:000 Text:msg-01";
+//const char *url = "msg:100:id:28 sub:001 dlvrd:001 submit date:1608011057 done date:1608011057 stat:DELIVRD Text:msg-01 err:000";
+//const char *url = "http://localhost:19095/v1/kanneldlr?foreign_id=28&smsc_id=sybase365_gw0_OT53c019d4fd8b3dae37290a6738ee47d6&status=1&report=id%3A28+sub%3A001+dlvrd%3A001+submit+date%3A1608011057+done+date%3A1608011057+stat%3ADELIVRD+err%3A000+Text%3Amsg-01&metadata=%3Fsmpp%3Fdlr_err%3D000%26&to=1234567xxxx";
+//const char *url = "http://localhost:19095/v1/kanneldlr?foreign_id=28&smsc_id=sybase365_gw0_OT53c019d4fd8b3dae37290a6738ee47d6&status=1&report=id%3A28+sub%3A001+dlvrd%3A001+submit+date%3A1608011057+done+date%3A1608011057+stat%3ADELIVRD+Text%3Amsg-01+err%3A000&metadata=%3Fsmpp%3Fdlr_err%3D000%26&to=1234567xxxx";
+
+
+
+
+    //const char *url = "http://127.0.0.1:19095/v1/kanneldlr?dlr-mode=ignore&sid=SMf9c8b988b4fd41168fd8e4d6f0bd8344&foreign_id=75e4b8fb-76d1-4cd3-95fd-5690fbf95561&shard=&num_segments=1&status=8&answer=ACK%2F&metadata=&Bar=98765432=&From=%2B123456&To=%2B18182009572";
+    //const char *url = "http://127.0.0.1:19095/v1/kanneldlr?dlr-mode=ignore&sid=SMf9c8b988b4fd41168fd8e4d6f0bd8344&foreign_id=75e4b8fb-76d1-4cd3-95fd-5690fbf95561&shard=&num_segments=1&status=8&answer=ACK%2F&metadata=&Bar=98765432=&To=%2B18182009572&From=123456";
+    //const char *url = "http://127.0.0.1:19095/v1/kanneldlr?dlr-mode=ignore&sid=SMf9c8b988b4fd41168fd8e4d6f0bd8344&foreign_id=75e4b8fb-76d1-4cd3-95fd-5690fbf95561&shard=&num_segments=1&status=8&answer=ACK%2F&metadata=&Bar=98765432=&To=%2B18182009572";
+
+
+    //const char *url = "http://127.0.0.1:19095/v1/kanneldlr?dlr-mode=ignore&sid=SMf9c8b988b4fd41168fd8e4d6f0bd8344&foreign_id=75e4b8fb-76d1-4cd3-95fd-5690fbf95561&shard=&num_segments=1&status=8&answer=ACK%2F&metadata=&From=%2B18089490063&smsc_id=virtualsmsc_gw0_OT53c019d4fd8b3dae37290a6738ee47d6";
+
+
+    for (int i=0; i < strlen(url); i++) printf("char: %c at pos: %d\n", url[i], i);
+
+    //char *url = "cdaab";
+
+    // int regexec(const regex_t *preg, const char *string, size_t nmatch, regmatch_t pmatch[], int eflags);
+
+    size_t nmatch = 3;
+
+printf("nmatch %zu\n", nmatch);
+
+    //regmatch_t pmatch[preg->re_nsub];
+    regmatch_t pmatch[nmatch];
+    rc = regexec(preg, url, nmatch, pmatch, 0);
+
+    if (rc == 0) {
+
+        /**
+         * rm_so
+         * offset in string of the beginning of a substring. Add this value to string to
+         * get the address of that part.
+         *
+         * rm_eo
+         * offset in string of the end of the substring
+         */
+        printf("%zu matches found\n", nmatch);
+        for (int i=0; i < nmatch; i++) {
+            printf("match details %d with offsets %d and %d\n", i, pmatch[i].rm_so, pmatch[i].rm_eo);
+        }
+
+// offsets here are definitely WRONG!!!!!!!!
+
+// url length => 40
+// rm_so - start => 10
+// rm_eo - end => 22
+// F o o F r o m = % 2 B  1  8  1  8  2  0  0  9  2  8  2  &  T  o  =  %  2  B  1  8  1  8  2  0  0  9  5  7  2
+// 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39
+
+        if (pmatch[2].rm_so != -1) {
+
+            if (url[pmatch[2].rm_eo] == '&')
+                printf("ending char is &\n");
+            else
+                printf("ending char is %c\n", url[pmatch[2].rm_eo]);
+
+
+
+            // 1  8  0  8  9  4  9  0  0  6  3  \0
+            // 0  1  2  3  4  5  6  7  8  9  10 11
+
+            // missing + in front of number
+            int len = pmatch[2].rm_eo - pmatch[2].rm_so + 1;
+            //int len = (url[pmatch[2].rm_eo - 1] == '&') ? pmatch[2].rm_eo - pmatch[2].rm_so - 1 : pmatch[2].rm_eo - pmatch[2].rm_so;
+            char *number = malloc(len);
+            memcpy(number, url + pmatch[2].rm_so, len - 1); // $ matches end of string (group), we need to start after
+            number[len - 1] = '\0';
+
+            printf("number is %s with len %d and strlen %d from url %s with url length %d\n", number, len, strlen(number), url, strlen(url));
+
+            char *new_url = malloc(1024);
+            memset(new_url, '\0', 1024);
+
+            // copy from beginning of string to the start of regex match
+            memcpy(new_url, url, pmatch[2].rm_so);
+            printf("new url after initial copy %s\n", new_url);
+
+            // copy masked phone number
+            memcpy(new_url + pmatch[2].rm_so, number, len - 1);
+            printf("new url after mask application %s\n", new_url);
+
+            printf("new_url at offset %s\n", new_url + pmatch[2].rm_so);
+
+            // copy rest of url
+            memcpy(new_url + pmatch[2].rm_so + len - 1, url + pmatch[2].rm_eo, strlen(url) - pmatch[2].rm_eo);
+
+            printf("url at offset %s should match new_url at offset: %s\n", url + pmatch[2].rm_eo, new_url + pmatch[2].rm_so + len - 1);
+
+            // offsets are probably off
+            // length of url - the chunk extracted representing the phone number + length of the masked phone number
+            // leave 
+            printf("new_url length %d with url length %d offsets [%d, %d] and calc %d\n",
+                strlen(new_url),
+                strlen(url),
+                pmatch[2].rm_so,
+                pmatch[2].rm_eo,
+                strlen(url) - pmatch[2].rm_eo);
+            //int new_url_len = strlen(url) - (pmatch[0].rm_eo - pmatch[0].rm_so) + len;
+            int new_url_len = strlen(new_url);
+            new_url[new_url_len] = '\0';
+            printf("new url after final copy %s with length %d\n", new_url, new_url_len);
+        }
+    }
+    else if (rc == REG_NOMATCH) printf("no match found\n");
+    else printf("unknown code received\n");
+
+    printf("after match\n");
+
+    regfree(preg);
+
+/*
+    printf("insertion sort\n");
+
+    int sorted[SIZE_OF_SMALL_ARRAY] = { 1, 2, 3, 4, 5, 6 };
+    int sortable[SIZE_OF_SMALL_ARRAY] = { 5, 2, 4, 6, 1, 3 };
+
+    int *result = insertion_sort( sortable, SIZE_OF_SMALL_ARRAY );
+    for ( int i=0; i < SIZE_OF_SMALL_ARRAY; i++ )
+    {
+        printf("expected: %d actual: %d\n", sorted[i], result[i]);
+        assert( sorted[i] == result[i] );
+    }
+
+    printf("merge sort\n");
+
+    int sortedMerge[SIZE_OF_LARGE_ARRAY] = { 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 2, 3, 4, 5, 6, 7 };
+    int sortableMerge[SIZE_OF_LARGE_ARRAY] = { 1, 2, 3, 4, 5, 6, 7, 8, 2, 4, 5, 7, 1, 2, 3, 6 };
+
+    int *resultMerge = merge_sort( sortableMerge, 8, 11, 15);
+    for ( int i=-0; i < SIZE_OF_LARGE_ARRAY; i++ )
+    {
+        printf("expected: %d actual: %d\n", sortedMerge[i], resultMerge[i]);
+        assert( sortedMerge[i] == resultMerge[i] );
+    }
+
+    printf("bubble sort\n");
+
+    int sortedBubble[SIZE_OF_SMALL_ARRAY] = { 1, 2, 3, 4, 5, 6 };
+    int sortableBubble[SIZE_OF_SMALL_ARRAY] = { 2, 5, 4, 6, 3, 1 };
+
+    int *resultBubble = bubble_sort( sortableBubble, SIZE_OF_SMALL_ARRAY );
+    for ( int i=0; i < SIZE_OF_SMALL_ARRAY; i++ )
+    {
+        printf("expected: %d actual: %d\n", sortedBubble[i], resultBubble[i]);
+        assert( sortedBubble[i] == resultBubble[i] );
+    }
+
+    printf("maximum crossing subarray\n");
+
+    int sortableCrossingSmall[SIZE_OF_SMALL_ARRAY] = { -6, 5, 2, -3, 7, 1 };
+
+    tuple tupSmall = find_max_crossing_subarray( sortableCrossingSmall, 0, 3, 6 );
+    printf("tuple max_left: %d max_right: %d sum: %d\n", tupSmall.max_left, tupSmall.max_right, tupSmall.sum);
+    assert( tupSmall.max_left == 1 );
+    assert( tupSmall.max_right == 5 );
+    assert( tupSmall.sum == 12 );
+
+    int sortableCrossingMedium[SIZE_OF_MEDIUM_ARRAY] = { -6, 5, 2, -3, 7, 1, -5, 8, -4, -9 };
+
+    tuple tupMedium = find_max_crossing_subarray( sortableCrossingMedium, 0, 5, 10 );
+    printf("tuple max_left: %d max_right: %d sum: %d\n", tupMedium.max_left, tupMedium.max_right, tupMedium.sum);
+    assert( tupMedium.max_left == 1 );
+    assert( tupMedium.max_right == 7 );
+    assert( tupMedium.sum == 15 );
+
+    printf("maximum subarray\n");
+
+    int sortableSingleElem[1] = { -6 };
+
+    tuple tupSingleElem = find_max_subarray( sortableSingleElem, 0, 0 );
+    printf("tuple max_left: %d max_right: %d sum: %d\n", tupSingleElem.max_left, tupSingleElem.max_right, tupSingleElem.sum);
+    assert( tupSingleElem.max_left == 0 );
+    assert( tupSingleElem.max_right == 0 );
+    assert( tupSingleElem.sum == -6 );
+
+    int sortableMax[SIZE_OF_SMALL_ARRAY] = { -6, 5, 2, -3, 7, 1 };
+
+    tuple tupMax = find_max_subarray( sortableMax, 0, 6 );
+    printf("tuple max_left: %d max_right: %d sum: %d\n", tupMax.max_left, tupMax.max_right, tupMax.sum);
+    assert( tupMax.max_left == 1 );
+    assert( tupMax.max_right == 5 );
+    assert( tupMax.sum == 12 );
+*/
+}
